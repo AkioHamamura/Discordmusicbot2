@@ -10,7 +10,7 @@ from discord import TextChannel
 from youtube_dl import YoutubeDL
 from termcolor import colored
 
-client = commands.Bot(command_prefix='/')  # prefix our commands with '.'
+client = commands.Bot(command_prefix='!')  # prefix our commands with '.'
 
 players = {}
 List = []
@@ -35,7 +35,7 @@ async def join(ctx):
 
 # command to play sound from a youtube URL
 @client.command()
-async def play(ctx, url):
+async def p(ctx, url):
     global List
     channel = ctx.message.author.voice.channel
     voice = get(client.voice_clients, guild=ctx.guild)
