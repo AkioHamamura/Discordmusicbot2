@@ -6,8 +6,6 @@ load_dotenv()
 from discord.ext import commands
 from discord.utils import get
 from discord import FFmpegPCMAudio
-from discord import FFmpegOpusAudio
-from discord import TextChannel
 from youtube_dl import YoutubeDL
 from termcolor import colored
 
@@ -140,7 +138,7 @@ async def back(ctx):
       with YoutubeDL(YTDLSource.YTDL_OPTIONS) as ydl:
           info = ydl.extract_info(List[Key], download=False)
       URL = info['url']
-      voice.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
+      voice.play(FFmpegPCMAudio(URL, **YTDLSource.FFMPEG_OPTIONS))
       voice.is_playing()
       await ctx.send('Returning to last video...')
 
