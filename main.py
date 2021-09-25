@@ -6,6 +6,7 @@ load_dotenv()
 from discord.ext import commands
 from discord.utils import get
 from discord import FFmpegPCMAudio
+from discord import FFmpegOpusAudio
 from discord import TextChannel
 from youtube_dl import YoutubeDL
 from termcolor import colored
@@ -15,6 +16,35 @@ client = commands.Bot(command_prefix='!')  # prefix our commands with '.'
 players = {}
 List = []
 Key = 0
+
+class VoiceError(Exception):
+    pass
+
+
+class YTDLError(Exception):
+    pass
+
+class YTDLSource(discord.PCMVolumeTransformer):
+    YTDL_OPTIONS = {
+        'format': 'bestaudio/best',
+        'extractaudio': True,
+        'audioformat': 'mp3',
+        'outtmpl': '%(extractor)s-%(id)s-%(title)s.%(ext)s',
+        'restrictfilenames': True,
+        'noplaylist': True,
+        'nocheckcertificate': True,
+        'ignoreerrors': False,
+        'logtostderr': False,
+        'quiet': True,
+        'no_warnings': True,
+        'default_search': 'auto',
+        'source_address': '0.0.0.0',
+    }
+
+    FFMPEG_OPTIONS = {
+        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+        'options': '-vn',
+    }
 
 @client.event  # check if bot is ready
 async def on_ready():
@@ -45,9 +75,6 @@ async def p(ctx, url):
         voice = await channel.connect()  
 
 
-    YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'true'}
-    FFMPEG_OPTIONS = {
-        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
     voice = get(client.voice_clients, guild=ctx.guild)
 
     if voice.is_playing():
@@ -56,10 +83,10 @@ async def p(ctx, url):
 
     elif not voice.is_playing():
       List.append(url)
-      with YoutubeDL(YDL_OPTIONS) as ydl:
+      with YoutubeDL(YTDLSource.YTDL_OPTIONS) as ydl:
         info = ydl.extract_info(List[Key], download=False) 
       URL = info['url']              
-      voice.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
+      voice.play(FFmpegPCMAudio(URL, **YTDLSource.FFMPEG_OPTIONS))
       voice.is_playing()
       await ctx.send('Bot is playing...')
 
@@ -72,33 +99,27 @@ async def skip(ctx):
   voice = get(client.voice_clients, guild=ctx.guild)
   if voice.is_paused():
       voice.stop()
-      YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'false'}
-      FFMPEG_OPTIONS = {
-          'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
       voice = get(client.voice_clients, guild=ctx.guild)
 
       global Key
       Key += 1
 
-      with YoutubeDL(YDL_OPTIONS) as ydl:
+      with YoutubeDL(YTDLSource.YTDL_OPTIONS) as ydl:
          info = ydl.extract_info(List[Key], download=False)
       URL = info['url']
-      voice.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
+      voice.play(FFmpegPCMAudio(URL, **YTDLSource.FFMPEG_OPTIONS))
       voice.is_playing()
       await ctx.send('Playing next video...')        
   elif voice.is_playing():
       voice.stop()
-      YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'false'}
-      FFMPEG_OPTIONS = {
-          'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
       voice = get(client.voice_clients, guild=ctx.guild)
 
       Key += 1
 
-      with YoutubeDL(YDL_OPTIONS) as ydl:
+      with YoutubeDL(YTDLSource.YTDL_OPTIONS) as ydl:
          info = ydl.extract_info(List[Key], download=False)
       URL = info['url']
-      voice.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
+      voice.play(FFmpegPCMAudio(URL, **YTDLSource.FFMPEG_OPTIONS))
       voice.is_playing()
       await ctx.send('Playing next video...')
 
@@ -111,15 +132,12 @@ async def back(ctx):
   voice = get(client.voice_clients, guild=ctx.guild)
   if voice.is_playing():
       voice.stop()
-      YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist': 'false'}
-      FFMPEG_OPTIONS = {
-          'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
       voice = get(client.voice_clients, guild=ctx.guild)
 
       global Key
       Key -= 1
 
-      with YoutubeDL(YDL_OPTIONS) as ydl:
+      with YoutubeDL(YTDLSource.YTDL_OPTIONS) as ydl:
           info = ydl.extract_info(List[Key], download=False)
       URL = info['url']
       voice.play(FFmpegPCMAudio(URL, **FFMPEG_OPTIONS))
